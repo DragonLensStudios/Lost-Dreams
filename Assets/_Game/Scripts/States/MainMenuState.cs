@@ -51,6 +51,7 @@ public class MainMenuState : BaseState
     {
         _uiWidget = _systems.UIManager.LoadUI(UI_PREFAB);
         _uiWidget.UIObject.GetComponent<UIMainMenu>()?.Setup(_systems);
+        EventManager.Pause(true);
     }
 
     public void TeardownState()
@@ -59,5 +60,6 @@ public class MainMenuState : BaseState
         {
             _systems.UIManager.RemoveUIByGuid(_uiWidget.GUID);
         }
+        EventManager.Pause(false);
     }
 }

@@ -57,6 +57,7 @@ public class Dungeon2State : BaseState
     {
         _systems.LevelSceneManager.LoadLevel("Dungeon");
         _uiWidget = _systems.UIManager.LoadUI(UI_PREFAB);
+        _uiWidget.UIObject.GetComponent<UiController>()?.Setup(_systems);
 
         // TODO: Grab Game UI script and inject data
         //_uiWidget.UIObject.GetComponent<>();

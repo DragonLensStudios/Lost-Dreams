@@ -36,6 +36,8 @@ public class EventManager
     public static event D_Void onLoadPlayerInventory;
     public static event D_Void onResetCurrentLevel;
     public static event D_Bool onLoadingTransition;
+    public static event D_Void onAttack;
+    public static event D_Bool onPause;
 
     public static void ControlsEnabled(bool value) { onControlsEnabled?.Invoke(value); }
     public static void ItemUse(ItemObject _item, GameObject _obj) { onItemUse?.Invoke(_item, _obj); }
@@ -52,4 +54,6 @@ public class EventManager
     public static void ResetCurrentLevel() { onResetCurrentLevel?.Invoke(); }
     public static void IncreaseHeartContainer(HeartContainerObject _heartContainer, GameObject _obj) { onHeartContainerIncrease?.Invoke(_heartContainer, _obj);}
     public static void LoadingTransition(bool showTransition) { onLoadingTransition?.Invoke(showTransition); }
+    public static void Attack() { onAttack?.Invoke(); }
+    public static void Pause(bool ispaused) { onPause?.Invoke(ispaused); }
 }

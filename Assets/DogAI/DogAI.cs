@@ -10,6 +10,7 @@ public class DogAI : MonoBehaviour
     public float catchUpStartDistance = 5f;
     public float catchUpStopDistance = 3f;
 
+    private bool movementEnable = true;
     private bool isCatchingUpToPlayer = false;
     private GameObject playerGameObject;
     private AIDestinationSetter destinationSetter;
@@ -46,8 +47,11 @@ public class DogAI : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        UpdateMoveSpeed();
-        UpdateAnimator();
+        if (movementEnable)
+        {
+            UpdateMoveSpeed();
+            UpdateAnimator();
+        }
     }
 
     //update the movespeed if dog should catchup or stop catching up

@@ -21,7 +21,7 @@ public class StateManager
     /// <param name="options">Optional data to be sent to the state</param>
     public void NavigateToState(Type stateType, bool popCurrentState = false, bool fadeTransition = false, Dictionary<string, object> options = null)
     {
-        _systems.StartCoroutine(NavigateToState_Implementation(stateType, popCurrentState = false, fadeTransition, options));
+        _systems.StartCoroutine(NavigateToState_Implementation(stateType, popCurrentState, fadeTransition, options));
     }
     private IEnumerator NavigateToState_Implementation(Type stateType, bool popCurrentState = false, bool fadeTransition = false, Dictionary<string, object> options = null) { 
         if (fadeTransition)
@@ -88,6 +88,10 @@ public class StateManager
         else if(stateType.Equals(typeof(SettingsState)))
         {
             PushState(new SettingsState(_systems), options);
+        }
+        else if (stateType.Equals(typeof(SettingsAndQuitState)))
+        {
+            PushState(new SettingsAndQuitState(_systems), options);
         }
         else if(stateType.Equals(typeof(CreditsState)))
         {

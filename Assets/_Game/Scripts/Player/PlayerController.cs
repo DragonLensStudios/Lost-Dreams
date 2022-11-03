@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using System;
+using UnityEngine.EventSystems;
 
 public class PlayerController : MonoBehaviour
 {
@@ -48,6 +49,9 @@ public class PlayerController : MonoBehaviour
     [Tooltip("maximum time delay between the first move button press and the second one to triger running")]
     [Range(0.1f, 1)]
     public float doubleTapForRunningCooldown;
+    [Tooltip("joystick run trigger range 1 being the max and 0.1 being the min.")]
+    [Range(0.1f, 1)]
+    public float joystickRunningTriggerDistance = 0.8f;
 
 
     [HideInInspector]
@@ -58,6 +62,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField]
     private Animator playerAnim;
     // private movement variable
+    private Joystick joystick;
     private Vector2 input;
     private Vector2 acceleration;
     private Vector2 accelerationMult;
@@ -87,11 +92,13 @@ public class PlayerController : MonoBehaviour
         EventManager.onControlsEnabled += EventManager_onControlsEnabled;
         EventManager.onSavePlayerInventory += EventManager_onSavePlayerInventory;
         EventManager.onLoadPlayerInventory += EventManager_onLoadPlayerInventory;
+        EventManager.onAttack += EventManager_onAttack;
+        EventManager.onPause += EventManager_onPause;
     }
 
-    private void EventManager_onHeartContainerIncrease(HeartContainerObject _container, GameObject _obj)
+    private void EventManager_onPause(bool value)
     {
-        inventory.RemoveItem(_container);
+        movementEnable = !value;
     }
 
     private void OnDisable()
@@ -102,58 +109,47 @@ public class PlayerController : MonoBehaviour
         EventManager.onControlsEnabled -= EventManager_onControlsEnabled;
         EventManager.onSavePlayerInventory -= EventManager_onSavePlayerInventory;
         EventManager.onLoadPlayerInventory -= EventManager_onLoadPlayerInventory;
-    }
-
-    private void EventManager_onSavePlayerInventory()
-    {
-        inventory.Save();
-    }
-
-    private void EventManager_onLoadPlayerInventory()
-    {
-        inventory.Load();
-    }
-
-    private void EventManager_onControlsEnabled(bool value)
-    {
-        movementEnable = value;
-    }
-
-    private void EventManager_onItemUse(ItemObject _item, GameObject _obj)
-    {
-        if (_obj == this.gameObject)
-        {
-            inventory.RemoveItem(_item);
-        }
-    }
-
-    private void EventManager_onFoodEat(FoodObject _food, GameObject _obj)
-    {
-        if (_obj == this.gameObject && health.health != health.maxHealth)
-        {
-            EventManager.HealthAdd(gameObject, _food.healAmount);
-            inventory.RemoveItem(_food);
-        }
+        EventManager.onAttack -= EventManager_onAttack;
+        EventManager.onPause -= EventManager_onPause;
     }
 
     // Start is called before the first frame update
-    void Start()
+    void Awake()
     {
         //setup all the references variable
         body = GetComponent<Rigidbody2D>();
         health = GetComponent<HealthComponent>();
         EventManager.InventoryChanged(inventory);
         audioSource = GetComponent<AudioSource>();
+#if UNITY_ANDROID || UNITY_IOS
+        joystick = GameObject.FindObjectOfType<Joystick>();
+#endif
     }
 
     // Update is called once per frame
     void Update()
     {
         // if attack
+
+#if UNITY_ANDROID || UNITY_IOS
+            if (Input.touchCount > 0 && Input.touches[0].phase == TouchPhase.Began && !currentlyAttacking && !attackOnCooldown && movementEnable && canAttack)
+            {
+                if (!EventSystem.current.IsPointerOverGameObject(Input.touches[0].fingerId))
+                {
+                    Attack();
+                }
+            }
+#else
         if (Input.GetAxisRaw("Fire1") == 1 && !currentlyAttacking && !attackOnCooldown && movementEnable && canAttack)
         {
-            Attack();
+            if (!EventSystem.current.IsPointerOverGameObject())
+            {
+                Attack();
+            }
         }
+#endif
+
+
         Mud();
 
         if (!isOnFoodCoooldown)
@@ -212,7 +208,23 @@ public class PlayerController : MonoBehaviour
     private void GetInput()
     {
         // getting input for movement
+#if UNITY_ANDROID || UNITY_IOS
+        if (joystick != null)
+        {
+            input.x = joystick.Horizontal;
+            input.y = joystick.Vertical;
+            if(input.x > joystickRunningTriggerDistance || input.y > joystickRunningTriggerDistance || input.x < -joystickRunningTriggerDistance || input.y < -joystickRunningTriggerDistance)
+            {
+                running = true;
+            }
+            else
+            {
+                running = false;
+            }
+        }
+#else
         input = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")).normalized;
+#endif
 
         // check if running
         if (lastInput != input && input != Vector2.zero)
@@ -288,7 +300,13 @@ public class PlayerController : MonoBehaviour
         }
 
         // animation manager
-        Vector2 newInput = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+        Vector2 newInput;
+
+#if UNITY_ANDROID || UNITY_IOS
+            newInput = new Vector2(joystick.Horizontal, joystick.Vertical);
+#else
+        newInput = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+#endif
         if (newInput != Vector2.zero)
         {
             DirectionFacing = newInput;
@@ -309,7 +327,7 @@ public class PlayerController : MonoBehaviour
         body.velocity = Vector2.zero;
     }
 
-    private void Attack()
+    public void Attack()
     {
         StartCoroutine(AttackCooldown());
         audioSource.PlayOneShot(attackSound);
@@ -414,5 +432,50 @@ public class PlayerController : MonoBehaviour
     public void EnableMovement(bool value)
     {
         movementEnable = value;
+    }
+
+    private void EventManager_onSavePlayerInventory()
+    {
+        inventory.Save();
+    }
+
+    private void EventManager_onLoadPlayerInventory()
+    {
+        inventory.Load();
+    }
+
+    private void EventManager_onControlsEnabled(bool value)
+    {
+        movementEnable = value;
+    }
+
+    private void EventManager_onItemUse(ItemObject _item, GameObject _obj)
+    {
+        if (_obj == this.gameObject)
+        {
+            inventory.RemoveItem(_item);
+        }
+    }
+
+    private void EventManager_onFoodEat(FoodObject _food, GameObject _obj)
+    {
+        if (_obj == this.gameObject && health.health != health.maxHealth)
+        {
+            EventManager.HealthAdd(gameObject, _food.healAmount);
+            inventory.RemoveItem(_food);
+        }
+    }
+
+    private void EventManager_onAttack()
+    {
+        if (!currentlyAttacking && !attackOnCooldown && movementEnable && canAttack)
+        {
+            Attack();
+        }
+    }
+
+    private void EventManager_onHeartContainerIncrease(HeartContainerObject _container, GameObject _obj)
+    {
+        inventory.RemoveItem(_container);
     }
 }

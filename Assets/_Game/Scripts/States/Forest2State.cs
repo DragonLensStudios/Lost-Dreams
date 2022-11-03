@@ -62,8 +62,8 @@ public class Forest2State : BaseState
     public void SetupState()
     {
         _systems.LevelSceneManager.LoadLevel("ForestLevel");
-        var player = GameObject.FindGameObjectWithTag("Player");
         _uiWidget = _systems.UIManager.LoadUI(UI_PREFAB);
+        _uiWidget.UIObject.GetComponent<UiController>()?.Setup(_systems);
 
         // TODO: Grab Game UI script and inject data
         //_uiWidget.UIObject.GetComponent<>();

@@ -31,6 +31,7 @@ public class EnemyAI : MonoBehaviour
 
     [Header("Movement")]
     public bool MovementLocked = false;
+    private bool movementEnable = true;
 
     private EnemyAIState currentState = EnemyAIState.Idle;
     private Coroutine stunnedCoroutine;
@@ -47,7 +48,6 @@ public class EnemyAI : MonoBehaviour
     private Rigidbody2D rb;
     protected Animator animator;
     private EnemyBaseAttackComponent attackComponent;
-    
     
     protected virtual void Awake()
     {
@@ -94,54 +94,66 @@ public class EnemyAI : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //Pre Action
-        //Check if should switch state
-        switch (currentState)
+        if (movementEnable)
         {
-            case EnemyAIState.Idle:
-                if (ShouldAggroToPlayer())
-                {
-                    if(wanderCoroutine != null)StopCoroutine(wanderCoroutine);
-                    SetCanEnemyMove(true);
-                    currentState = EnemyAIState.AttackingPlayer;
-                    destinationSetter.target = playerGameObject.transform;
-                }
-                break;
-            case EnemyAIState.AttackingPlayer:
-                if (GetDistanceToPlayer() > deAggroRange)//if player has gone further than deaggro range
-                {
-                    currentState = EnemyAIState.Idle;
-                    destinationSetter.target = wanderTargetObject.transform;
-                }
-                break;
-            default:
-                break;
+            //Pre Action
+            //Check if should switch state
+            switch (currentState)
+            {
+                case EnemyAIState.Idle:
+                    if (ShouldAggroToPlayer())
+                    {
+                        if (wanderCoroutine != null) StopCoroutine(wanderCoroutine);
+                        SetCanEnemyMove(true);
+                        currentState = EnemyAIState.AttackingPlayer;
+                        destinationSetter.target = playerGameObject.transform;
+                    }
+                    break;
+                case EnemyAIState.AttackingPlayer:
+                    if (GetDistanceToPlayer() > deAggroRange)//if player has gone further than deaggro range
+                    {
+                        currentState = EnemyAIState.Idle;
+                        destinationSetter.target = wanderTargetObject.transform;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            //Action
+            //Take action based on state
+            switch (currentState)
+            {
+                case EnemyAIState.Idle:
+                    Wander();
+                    break;
+                case EnemyAIState.AttackingPlayer:
+                    attackComponent.TryPerformAttack();
+                    break;
+                default:
+                    break;
+            }
+            UpdateAnimator();
         }
-        //Action
-        //Take action based on state
-        switch (currentState)
-        {
-            case EnemyAIState.Idle:
-                Wander();
-                break;
-            case EnemyAIState.AttackingPlayer:
-                attackComponent.TryPerformAttack();
-                break;
-            default:
-                break;
-        }
-        UpdateAnimator();
+
     }
     private void OnEnable()
     {
         EventManager.onObjectDied += OnObjectDied;
         EventManager.onDamageActor += OnDamageActor;
+        EventManager.onPause += EventManager_onPause;
 
     }
+
+    private void EventManager_onPause(bool value)
+    {
+        movementEnable = !value;
+    }
+
     private void OnDisable()
     {
         EventManager.onObjectDied -= OnObjectDied;
         EventManager.onDamageActor -= OnDamageActor;
+        EventManager.onPause += EventManager_onPause;
     }
 
     //Gets the direction the character is facing(Up, Down, Left, Right)

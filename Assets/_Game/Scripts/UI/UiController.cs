@@ -9,6 +9,7 @@ public class UiController : MonoBehaviour
     public GameObject itemSlotPrefab;
     public TMP_Text inventoryFullText;
     public Image cutsceneImage;
+    public GameObject mobileJoystick;
 
     [SerializeField] private float inventoryFullTextTime;
     [SerializeField] private ItemSlot[] _inventorySlots;
@@ -91,5 +92,24 @@ public class UiController : MonoBehaviour
     public void ShowCutSceneImage(bool value)
     {
         cutsceneImage.gameObject.SetActive(value);
+    }
+
+    private void Awake()
+    {
+#if UNITY_ANDROID || UNITY_IOS
+        mobileJoystick.SetActive(true);
+#else
+        mobileJoystick.SetActive(false);
+#endif
+    }
+
+    public void SettingsAndQuitClicked()
+    {
+        _systems.StateManager.NavigateToState(typeof(SettingsAndQuitState));
+    }
+
+    public void Attack()
+    {
+        EventManager.Attack();
     }
 }

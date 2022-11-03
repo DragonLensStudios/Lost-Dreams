@@ -52,6 +52,7 @@ public class Apartment2State : BaseState
     {
         _systems.LevelSceneManager.LoadLevel("Apartment2");
         _uiWidget = _systems.UIManager.LoadUI(UI_PREFAB);
+        _uiWidget.UIObject.GetComponent<UiController>()?.Setup(_systems);
 
         // TODO: Grab Game UI script and inject data
         //_uiWidget.UIObject.GetComponent<>();
